@@ -5,10 +5,14 @@ export default function StablaDemo() {
     { from: 'bot', text: 'Dobrý den, jsem Stabla – vaše průvodkyně světem BCP. Jak vám mohu pomoci?' },
   ]);
   const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const speak = (text) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'cs-CZ';
+    utterance.pitch = 1;
+    utterance.rate = 1;
+    utterance.volume = 1;
     speechSynthesis.speak(utterance);
   };
 
@@ -17,11 +21,35 @@ export default function StablaDemo() {
     const userMessage = { from: 'user', text: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
+    setLoading(true);
 
-    const botReply = 'Zatím je toto demo. Připravujeme napojení na AI.';
-    const botMessage = { from: 'bot', text: botReply };
-    setMessages((prev) => [...prev, botMessage]);
-    speak(botReply);
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer YOUR_OPENAI_API_KEY` // ← nahraď svým klíčem
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [
+            { role: 'system', content: 'Jsi přátelská, ale formální asistentka jménem Stabla. Pomáháš zákazníkům s produkty BCP: kapky, mast a šampon. Mluvíš česky, jednoduše a srozumitelně.' },
+            ...messages.map(msg => ({ role: msg.from === 'user' ? 'user' : 'assistant', content: msg.text })),
+            { role: 'user', content: input }
+          ]
+        })
+      });
+
+      const data = await response.json();
+      const aiReply = data.choices[0].message.content;
+      const botMessage = { from: 'bot', text: aiReply };
+      setMessages((prev) => [...prev, botMessage]);
+      speak(aiReply);
+    } catch (error) {
+      setMessages((prev) => [...prev, { from: 'bot', text: 'Omlouvám se, došlo k chybě při zpracování odpovědi.' }]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -31,6 +59,7 @@ export default function StablaDemo() {
         {messages.map((msg, idx) => (
           <div key={idx}><strong>{msg.from === 'bot' ? 'Stabla' : 'Vy'}:</strong> {msg.text}</div>
         ))}
+        {loading && <div style={{ color: 'green' }}>Stabla přemýšlí…</div>}
       </div>
       <input
         value={input}
