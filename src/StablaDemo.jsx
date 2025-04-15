@@ -28,7 +28,7 @@ export default function StablaDemo() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer YOUR_OPENAI_API_KEY` // ← nahraď svým klíčem
+          'Authorization': `Bearer sk-abc1234567890...` // ← nahraď svým klíčem
         },
         body: JSON.stringify({
           model: 'gpt-3.5-turbo',
